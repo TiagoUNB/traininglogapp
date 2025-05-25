@@ -39,6 +39,10 @@ class TreinoDB(DataBase):
         if treino:
             treino.exercises.append(exercicio)
             self.__save()
+    def _update_treino_name(self, treino_name:str, novo_nome:str):
+        treino = self._get_treino(treino_name)
+        treino.name = novo_nome
+        self.__save()
     def _update_exercise(self, exercicio_name: str, treino_name: str, value: int, attr: str):
         # attr deve ser 'weight' ou 'reps' 
         exercicio = self._get_exercicio(exercicio_name,treino_name)

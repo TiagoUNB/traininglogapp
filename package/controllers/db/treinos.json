@@ -11,6 +11,11 @@
         "name": "Puxada Alta",
         "weight": 95,
         "reps": 5
+      },
+      {
+        "name": "Supino",
+        "weight": 100,
+        "reps": 10
       }
     ]
   }

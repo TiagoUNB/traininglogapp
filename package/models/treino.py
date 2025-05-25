@@ -1,6 +1,6 @@
 class Treino:
-    def __init__(self, name: str):
+    def __init__(self, name: str, exercises= []):
         self.name = name
-        self.exercises = [] # 
+        self.exercises = exercises
 
        

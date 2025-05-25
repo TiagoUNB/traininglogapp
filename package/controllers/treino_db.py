@@ -8,7 +8,16 @@ class TreinoDB(DataBase):
         if not data or all(not item for item in data):
             self._database = []
         else:
-            self._database = [Treino(**item) for item in data]
+            self._database = []
+            for item in data:
+                name = item['name']
+                exercises = []
+                for exercise in item['exercises']:
+                     exc = Exercicio(**exercise)
+                     exercises.append(exc)
+                tr = Treino(name,exercises)
+                self._database.append(tr)
+                
     def _get_treino(self, name: str)-> Treino:
         for treino in self._database:
             if treino.name == name:
@@ -48,6 +57,7 @@ class TreinoDB(DataBase):
         for treino in self._database:
             treino_dict = {"name": treino.name}
             exercicios_list = []
+            
             for exercicio in treino.exercises:
                 exercicio_dict = {
                     "name": exercicio.name,

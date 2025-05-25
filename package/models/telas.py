@@ -94,6 +94,8 @@ class Tela2(TelaBase):
         sub_janela.title("Criar Novo Treino")
         
         sub_janela.geometry("400x300")
+
+        self.num_exercicio = 0
         
         tk.Label(sub_janela, text="Nome do Treino:").pack(pady=5)
         
@@ -108,7 +110,7 @@ class Tela2(TelaBase):
                 messagebox.showwarning("Aviso", "Por favor, insira um nome para o treino.")
                 return
             treino = Treino(nome_treino)
-            self.db._add_treino(treino)
+            self.db._add_treino(treino) #objeto
             self.nome_treino = nome_treino
             messagebox.showinfo("Sucesso", "Nome salvo com sucesso!")
             sub_janela.destroy()
@@ -129,6 +131,8 @@ class Tela2(TelaBase):
             sub_janela2.geometry("400x300")
             
             tk.Label(sub_janela2, text="Exercicios:").pack(pady=5)
+            tk.Label(sub_janela2, text=f"Num de Exercicios: {self.num_exercicio}").pack(pady=5)
+
 
             exercicio_entry = tk.Entry(sub_janela2, width=30)
             exercicio_entry.insert(0, "Ex: Supino")

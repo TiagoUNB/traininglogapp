@@ -1,11 +1,16 @@
 [
   {
-    "name": "upper",
+    "name": "Upper",
     "exercises": [
       {
-        "name": "Supino",
-        "weight": 10,
-        "reps": 10
+        "name": "Supino Inclinado",
+        "weight": 100,
+        "reps": 6
+      },
+      {
+        "name": "Puxada Alta",
+        "weight": 95,
+        "reps": 5
       }
     ]
   }

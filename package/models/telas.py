@@ -4,10 +4,150 @@ from tkinter import CENTER, messagebox
 from package.models.treino import Treino
 from package.models.exercicio import Exercicio
 
+class SubJanelaBase:
+    def __init__(self, parent, title="Subjanela", geometry="400x300"):
+        self.parent = parent
+        self.janela = tk.Toplevel(parent)
+        self.janela.title(title)
+        self.janela.geometry(geometry)
+        self.setup_ui()
+    
+    def setup_ui(self):
+        pass
+    
+    def destroy(self):
+        self.janela.destroy()
+    
+    def show_warning(self, message):
+        messagebox.showwarning("Aviso", message)
+    
+    def show_info(self, message):
+        messagebox.showinfo("Sucesso", message)
+
+class SubJanelaCriarTreino(SubJanelaBase):
+    def __init__(self, parent, db, callback:function =None):
+        self.db = db
+        self.callback = callback
+        super().__init__(parent, "Criar Novo Treino", "400x300")
+    
+    def setup_ui(self):
+        tk.Label(self.janela, text="Nome do Treino:").pack(pady=5)
+        
+        self.treino_entry = tk.Entry(self.janela)
+        self.treino_entry.pack(pady=5)
+        
+        confirmar_btn = tk.Button(
+            self.janela,
+            text="Confirmar",
+            command=lambda: self.confirmar_nome,
+            width=15,
+            font=("Arial", 12))
+        confirmar_btn.pack(pady=5)
+    
+    def confirmar_nome(self):
+        nome_treino = self.treino_entry.get().strip()
+        if not nome_treino:
+            self.show_warning("Por favor, insira um nome para o treino.")
+            return
+        
+        treino = Treino(nome_treino)
+        self.db._add_treino(treino)
+        self.show_info("Nome salvo com sucesso!")
+        self.destroy()
+        
+        # Open the exercise addition window
+        if self.callback:
+            self.callback(nome_treino)
+
+class SubJanelaAdicionarExercicios(SubJanelaBase):
+    def __init__(self, parent, db, nome_treino):
+        self.db = db
+        self.nome_treino = nome_treino
+        self.num_exercicio = 0
+        super().__init__(parent, "Adicionar Exercícios", "400x400")
+    
+    def setup_ui(self):
+        tk.Label(self.janela, text="Exercícios:").pack(pady=5)
+        
+        self.exc_num_label = tk.Label(self.janela, text=f"Num de Exercícios: {self.num_exercicio}")
+        self.exc_num_label.pack(pady=5)
+        
+        # Exercise name
+        self.exercicio_entry = tk.Entry(self.janela, width=30)
+        self.exercicio_entry.insert(0, "Ex: Supino")
+        self.exercicio_entry.pack(pady=5)
+        self.exercicio_entry.bind("<FocusIn>", lambda e: self.limpar_texto(self.exercicio_entry))
+        
+        # Weight
+        self.peso_entry = tk.Entry(self.janela, width=30)
+        self.peso_entry.insert(0, "Ex: 10kg")
+        self.peso_entry.pack(pady=5)
+        self.peso_entry.bind("<FocusIn>", lambda e: self.limpar_texto(self.peso_entry))
+        
+        # Repetitions
+        self.repeticoes_entry = tk.Entry(self.janela, width=30)
+        self.repeticoes_entry.insert(0, "Ex: 10x")
+        self.repeticoes_entry.pack(pady=5)
+        self.repeticoes_entry.bind("<FocusIn>", lambda e: self.limpar_texto(self.repeticoes_entry))
+        
+        # Buttons
+        exercicio_btn = tk.Button(
+            self.janela,
+            text="Adicionar Exercício",
+            command=self.add_exercicio,
+            width=15,
+            font=("Arial", 12))
+        exercicio_btn.pack(pady=5)
+        
+        end_btn = tk.Button(
+            self.janela,
+            text="Sair",
+            command=self.destroy,
+            width=15,
+            font=("Arial", 12))
+        end_btn.pack(pady=5)
+    
+    def limpar_texto(self, entry):
+        entry.delete(0, tk.END)
+    
+    def resetar_texto(self):
+        entries = [self.exercicio_entry, self.peso_entry, self.repeticoes_entry]
+        placeholders = ["Ex: Supino", "Ex: 10kg", "Ex: 10x"]
+        
+        for entry, placeholder in zip(entries, placeholders):
+            self.limpar_texto(entry)
+            entry.insert(0, placeholder)
+    
+    def add_exercicio(self):
+        # Extract numeric values from entries
+        peso_text = self.peso_entry.get().replace('kg', '').strip()
+        repeticoes_text = self.repeticoes_entry.get().replace('x', '').strip()
+        
+        if not peso_text.isdigit() or not repeticoes_text.isdigit():
+            self.show_warning("Por favor, insira valores numéricos para peso e repetições.")
+            return
+        
+        nome = self.exercicio_entry.get().strip()
+        peso = int(peso_text)
+        repeticoes = int(repeticoes_text)
+        
+        if not nome or nome.startswith("Ex:") or peso <= 0 or repeticoes <= 0:
+            self.show_warning("Por favor, preencha todos os campos corretamente.")
+            return
+        
+        exercicio = Exercicio(nome, peso, repeticoes)
+        self.db._add_exercicio(self.nome_treino, exercicio)
+        self.show_info("Exercício salvo com sucesso!")
+        self.resetar_texto()
+        
+        self.num_exercicio += 1
+        self.exc_num_label.config(text=f"Num de Exercícios: {self.num_exercicio}")
+
 class TelaBase(tk.Frame):
     def __init__(self, master, controller):
         super().__init__(master)
         self.controller = controller
+    
     def limpar_widgets(self):
         for widget in self.winfo_children():
             widget.destroy()
@@ -16,22 +156,24 @@ class Tela1(TelaBase):
     def __init__(self, master, controller):
         super().__init__(master, controller)
         self.build()
+    
     def build(self):
         self.limpar_widgets()
         texto = tk.Label(self, text="Bem-vindo ao sistema treinos!", font=("Arial", 16, "bold"))
-        texto.place(relx=0.5,rely=50/380,anchor=CENTER)
+        texto.place(relx=0.5, rely=50/380, anchor=CENTER)
         
         self.entrybox = tk.Entry(self, width=50)
-        self.entrybox.place(relx=0.5,rely=100/380,anchor=CENTER)
+        self.entrybox.place(relx=0.5, rely=100/380, anchor=CENTER)
         
         entrar_button = tk.Button(
             self, text="Entrar",
             command=self.confirmar_nome,
             font=("Arial", 16))
-        entrar_button.place(relx=0.5,rely=200/380,anchor=CENTER)
+        entrar_button.place(relx=0.5, rely=200/380, anchor=CENTER)
         
         assinatura = tk.Label(self, text="Desenvolvido por Tiago Geovane", font=("Arial", 10))
-        assinatura.place(relx=0.5,rely=330/380,anchor=CENTER)
+        assinatura.place(relx=0.5, rely=330/380, anchor=CENTER)
+    
     def confirmar_nome(self):
         name = self.entrybox.get().strip()
         if not name:
@@ -87,99 +229,11 @@ class Tela2(TelaBase):
         voltar_button.place(relx=0.5, rely=330/380, anchor=CENTER)
 
     def criar_treino(self):
-
-        #subjanela 1
-
-        sub_janela = tk.Toplevel(self)
-        sub_janela.title("Criar Novo Treino")
+        def abrir_janela_exercicios(nome_treino):
+            SubJanelaAdicionarExercicios(self, self.db, nome_treino)
         
-        sub_janela.geometry("400x300")
+        SubJanelaCriarTreino(self, self.db, callback=abrir_janela_exercicios)
 
-        self.num_exercicio = 0
-        
-        tk.Label(sub_janela, text="Nome do Treino:").pack(pady=5)
-        
-        treino_entry = tk.Entry(sub_janela)
-        treino_entry.pack(pady=5)
-
-        self.nome_treino = treino_entry.get()
-
-        def confirmar_nome():
-            nome_treino = treino_entry.get()
-            if not nome_treino:
-                messagebox.showwarning("Aviso", "Por favor, insira um nome para o treino.")
-                return
-            treino = Treino(nome_treino)
-            self.db._add_treino(treino) #objeto
-            self.nome_treino = nome_treino
-            messagebox.showinfo("Sucesso", "Nome salvo com sucesso!")
-            sub_janela.destroy()
-            subjanela2()
-        
-        confirmar_btn = tk.Button(
-            sub_janela,
-            text="Confirmar",
-            command=lambda: confirmar_nome(),
-            width=15,
-            font=("Arial", 12))
-        confirmar_btn.pack(pady=5)
-
-        def subjanela2():
-            sub_janela2 = tk.Toplevel(self)
-            sub_janela2.title("Criar Novo Treino")
-            
-            sub_janela2.geometry("400x300")
-            
-            tk.Label(sub_janela2, text="Exercicios:").pack(pady=5)
-            tk.Label(sub_janela2, text=f"Num de Exercicios: {self.num_exercicio}").pack(pady=5)
-
-
-            exercicio_entry = tk.Entry(sub_janela2, width=30)
-            exercicio_entry.insert(0, "Ex: Supino")
-            exercicio_entry.pack(pady=5)
-            exercicio_entry.bind("<FocusIn>", lambda e: limpar_texto(exercicio_entry))
-            
-            # Peso
-            peso_entry = tk.Entry(sub_janela2, width=30)
-            peso_entry.insert(0, "Ex: 10kg")
-            peso_entry.pack(pady=5)
-            peso_entry.bind("<FocusIn>", lambda e: limpar_texto(peso_entry))
-            
-            # Repetições
-            repeticoes_entry = tk.Entry(sub_janela2, width=30)
-            repeticoes_entry.insert(0, "Ex: 10x")
-            repeticoes_entry.pack(pady=5)
-            repeticoes_entry.bind("<FocusIn>", lambda e: limpar_texto(repeticoes_entry))
-
-            def limpar_texto(entry):
-                entry.delete(0, tk.END)
-
-            def add_exercicio(nome_treino):
-                if not peso_entry.get().isdigit() or not repeticoes_entry.get().isdigit() :
-                    messagebox.showwarning("Aviso", "Por favor, insira valores numéricos para peso e repetições.")
-                    return
-                
-                nome = exercicio_entry.get()
-                peso = int(peso_entry.get())
-                repeticoes = int(repeticoes_entry.get())
-                
-                if not nome != "" and peso != 0 and repeticoes != 0:
-                    messagebox.showwarning("Aviso", "Por favor, preencha todos os campos.")
-                    return
-                exercicio = Exercicio(nome, peso, repeticoes)
-                self.db._add_exercicio(nome_treino, exercicio)
-                messagebox.showinfo("Sucesso", "Exercicio salvo com sucesso!")
-                sub_janela2.destroy()
-                return
-                
-
-            exercicio_btn = tk.Button(
-                sub_janela2,
-                text="Adicionar Exercicio",
-                command=lambda: add_exercicio(self.nome_treino),
-                width=15,
-                font=("Arial", 12))
-            exercicio_btn.pack(pady=5)
     def editar_treino(self):
         # Implementação futura para editar treino
         messagebox.showinfo("Informação", "Funcionalidade de editar treino será implementada em breve!")

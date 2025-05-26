@@ -379,9 +379,6 @@ class SubJanelaListarTreinos(SubJanelaBase):
         self.exercicios_frame = tk.Frame(main_frame, relief="solid", borderwidth=1)
         self.exercicios_frame.pack(fill="both", expand=True, pady=(0, 10))
         
-        self.sem_exercicios_label = tk.Label(self.exercicios_frame, text="Nenhum exercício encontrado neste treino.", 
-                                           font=("Arial", 12), fg="gray")
-        
         botoes_frame = tk.Frame(main_frame)
         botoes_frame.pack(fill="x", pady=(10, 0))
         
@@ -441,7 +438,13 @@ class SubJanelaListarTreinos(SubJanelaBase):
                 exercicio_label = tk.Label(exercicio_frame, text=info_text, font=("Arial", 11), anchor="w")
                 exercicio_label.pack(fill="x", padx=5, pady=3)
         else:
-            self.sem_exercicios_label.pack(expand=True)
+            sem_exercicios_label = tk.Label(
+            self.exercicios_frame,
+            text="Nenhum exercício encontrado neste treino.",
+            font=("Arial", 12),
+            fg="gray"
+        )
+            sem_exercicios_label.pack(expand=True)
     
     def proximo_treino(self):
         if not self.treinos:

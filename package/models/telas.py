@@ -243,7 +243,7 @@ class SubJanelaEditarExercicio(SubJanelaBase):
 
         treino = self.db._get_treino(self.nome_treino)
         
-        self.num_exercicio = len(treino.exercices) if treino and hasattr(treino, 'exercices') else 0
+        self.num_exercicio = len(treino.exercises) if treino and hasattr(treino, 'exercises') and treino.exercises is not None else 0
         self.exc_num_label = tk.Label(self.janela, text=f"Num de Exercícios: {self.num_exercicio}")
         self.exc_num_label.pack(pady=5)
         
@@ -358,6 +358,207 @@ class SubJanelaEditarExercicio(SubJanelaBase):
         self.db._update_exercise(nome, self.nome_treino, repeticoes, "reps")
         self.show_info("Exercício editado com sucesso!")
         self.resetar_texto()
+class SubJanelaListarTreinos(SubJanelaBase):
+    def __init__(self, parent, db):
+        self.db = db
+        self.treinos = self.db._get_treinos()
+        self.index = 0
+        super().__init__(parent, "Listar Treinos", "600x500")
+        
+        if not self.treinos:
+            self.show_warning("Nenhum treino encontrado!")
+            self.destroy()
+
+    def setup_ui(self):
+        main_frame = tk.Frame(self.janela)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        self.titulo_label = tk.Label(main_frame, text="", font=("Arial", 16, "bold"))
+        self.titulo_label.pack(pady=(0, 10))
+        
+        self.exercicios_frame = tk.Frame(main_frame, relief="solid", borderwidth=1)
+        self.exercicios_frame.pack(fill="both", expand=True, pady=(0, 10))
+        
+        self.sem_exercicios_label = tk.Label(self.exercicios_frame, text="Nenhum exercício encontrado neste treino.", 
+                                           font=("Arial", 12), fg="gray")
+        
+        botoes_frame = tk.Frame(main_frame)
+        botoes_frame.pack(fill="x", pady=(10, 0))
+        
+        anterior_btn = tk.Button(
+            botoes_frame,
+            text="◀ Anterior",
+            command=self.treino_anterior,
+            width=12,
+            font=("Arial", 10))
+        anterior_btn.pack(side="left", padx=(0, 5))
+        
+        self.posicao_label = tk.Label(botoes_frame, text="", font=("Arial", 10))
+        self.posicao_label.pack(side="left", expand=True)
+        
+        proximo_btn = tk.Button(
+            botoes_frame,
+            text="Próximo ▶",
+            command=self.proximo_treino,
+            width=12,
+            font=("Arial", 10))
+        proximo_btn.pack(side="right", padx=(5, 0))
+        
+        fechar_btn = tk.Button(
+            main_frame,
+            text="Fechar",
+            command=self.destroy,
+            width=15,
+            font=("Arial", 12))
+        fechar_btn.pack(pady=(10, 0))
+        
+        self.mostrar_treino_atual()
+    
+    def mostrar_treino_atual(self):
+        if not self.treinos:
+            return
+            
+        treino_atual = self.treinos[self.index]
+        
+        self.titulo_label.config(text=f"Treino: {treino_atual.name}")
+        
+        self.posicao_label.config(text=f"{self.index + 1} de {len(self.treinos)}")
+        
+        for widget in self.exercicios_frame.winfo_children():
+            widget.destroy()
+        
+        if hasattr(treino_atual, 'exercises') and treino_atual.exercises:
+            header_frame = tk.Frame(self.exercicios_frame)
+            header_frame.pack(fill="x", padx=5, pady=5)
+            
+            tk.Label(header_frame, text="Exercícios:", font=("Arial", 12, "bold")).pack(anchor="w")
+            
+            for i, exercicio in enumerate(treino_atual.exercises, 1):
+                exercicio_frame = tk.Frame(self.exercicios_frame, relief="groove", borderwidth=1)
+                exercicio_frame.pack(fill="x", padx=5, pady=2)
+                
+                info_text = f"{i}. {exercicio.name} - {exercicio.weight}kg - {exercicio.reps}x"
+                exercicio_label = tk.Label(exercicio_frame, text=info_text, font=("Arial", 11), anchor="w")
+                exercicio_label.pack(fill="x", padx=5, pady=3)
+        else:
+            self.sem_exercicios_label.pack(expand=True)
+    
+    def proximo_treino(self):
+        if not self.treinos:
+            return
+            
+        self.index = (self.index + 1) % len(self.treinos) 
+        self.mostrar_treino_atual()
+    
+    def treino_anterior(self):
+        if not self.treinos:
+            return
+            
+        self.index = (self.index - 1) % len(self.treinos)  
+        self.mostrar_treino_atual()
+class SubJanelaRemoverTreino(SubJanelaBase):
+    def __init__(self, parent, db):
+        self.db = db
+        super().__init__(parent, "Remover Treino", "400x300")
+    
+    def setup_ui(self):
+        tk.Label(self.janela, text="Nome do Treino para Remover:").pack(pady=5)
+        
+        self.treino_entry = tk.Entry(self.janela, width=30)
+        self.treino_entry.pack(pady=5)
+        
+
+        confirmar_btn = tk.Button(
+            self.janela,
+            text="Remover Treino",
+            command=self.confirmar_remocao,
+            width=15,
+            font=("Arial", 12),
+            bg="#ff4444",
+            fg="white")
+        confirmar_btn.pack(pady=10)
+        
+        listar_btn = tk.Button(
+            self.janela,
+            text="Ver Treinos Disponíveis",
+            command=self.mostrar_treinos_disponiveis,
+            width=20,
+            font=("Arial", 10))
+        listar_btn.pack(pady=5)
+        
+        self.lista_frame = tk.Frame(self.janela)
+        self.lista_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        cancelar_btn = tk.Button(
+            self.janela,
+            text="Cancelar",
+            command=self.destroy,
+            width=10,
+            font=("Arial", 10))
+        cancelar_btn.pack(pady=5)
+    
+    def mostrar_treinos_disponiveis(self):
+        for widget in self.lista_frame.winfo_children():
+            widget.destroy()
+        
+        treinos = self.db._get_treinos()
+        
+        if not treinos:
+            tk.Label(self.lista_frame, text="Nenhum treino encontrado.", 
+                    font=("Arial", 10), fg="gray").pack()
+            return
+        
+        tk.Label(self.lista_frame, text="Treinos disponíveis:", 
+                font=("Arial", 10, "bold")).pack(anchor="w")
+        
+        canvas = tk.Canvas(self.lista_frame, height=100)
+        scrollbar = tk.Scrollbar(self.lista_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        for i, treino in enumerate(treinos, 1):
+            treino_text = f"{i}. {treino.name}"
+            treino_label = tk.Label(scrollable_frame, text=treino_text, 
+                                  font=("Arial", 9), anchor="w")
+            treino_label.pack(fill="x", padx=5, pady=1)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+    
+    def confirmar_remocao(self):
+        nome_treino = self.treino_entry.get().strip()
+        
+        if not nome_treino:
+            self.show_warning("Por favor, insira o nome do treino.")
+            return
+        
+        treino = self.db._get_treino(nome_treino)
+        if not treino:
+            self.show_warning("Treino não encontrado. Verifique se digitou o nome corretamente.")
+            return
+        
+        resposta = messagebox.askyesno(
+            "Confirmar Remoção",
+            f"Tem certeza que deseja remover o treino '{nome_treino}'?\n\n"
+            f"Esta ação não pode ser desfeita e todos os exercícios "
+            f"deste treino também serão removidos.",
+            icon="warning"
+        )
+        
+        if resposta:
+            try:
+                self.db._remove_treino(nome_treino)
+                self.show_info(f"Treino '{nome_treino}' removido com sucesso!")
+                self.destroy()
+            except Exception as e:
+                self.show_warning(f"Erro ao remover treino: {str(e)}")
 
 class TelaBase(tk.Frame):
     def __init__(self, master, controller):
@@ -449,7 +650,6 @@ class Tela2(TelaBase):
             SubJanelaAdicionarExercicios(self, self.db, nome_treino)
         
         SubJanelaCriarTreino(self, self.db, callback=abrir_janela_exercicios)
-
     def editar_treino(self):
         def abrir_janela_editar_nome(nome_treino):
             SubJanelaEditarNomeTreino(self, self.db, nome_treino)
@@ -458,11 +658,7 @@ class Tela2(TelaBase):
             SubJanelaEditarExercicio(self, self.db, nome_treino)
         
         SubJanelaEditarTreino(self, self.db, callback1=abrir_janela_editar_nome, callback2=abrir_janela_editar_exercicio)
-  
     def ver_treinos(self):
-        # Implementação futura para visualizar treino
-        messagebox.showinfo("Informação", "Funcionalidade de visualizar treinos será implementada em breve!")
-        
+        SubJanelaListarTreinos(self,self.db)
     def remover_treino(self):
-        # Implementação futura para remover treino
-        messagebox.showinfo("Informação", "Funcionalidade de remover treino será implementada em breve!")
+       SubJanelaRemoverTreino(self,self.db)

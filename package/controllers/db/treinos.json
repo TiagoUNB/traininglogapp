@@ -18,5 +18,15 @@
         "reps": 10
       }
     ]
+  },
+  {
+    "name": "Lower",
+    "exercises": [
+      {
+        "name": "Leg Press",
+        "weight": 1,
+        "reps": 1
+      }
+    ]
   }
 ]

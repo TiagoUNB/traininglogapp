@@ -17,6 +17,9 @@ class TreinoDB(DataBase):
                      exercises.append(exc)
                 tr = Treino(name,exercises)
                 self._database.append(tr)
+
+    def _get_treinos(self):
+        return self._database
                 
     def _get_treino(self, name: str)-> Treino:
         for treino in self._database:
@@ -52,9 +55,9 @@ class TreinoDB(DataBase):
             exercicio.reps = value    
         self.__save()
     def _remove_treino(self, name: str)-> None:
-        treino = self.get_treino(name)
+        treino = self._get_treino(name)
         if treino:
-            self._remove_object(treino)
+            self._database.remove(treino)
             self.__save()
     def __save(self):
         dict_treinos = []
